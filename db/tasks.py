@@ -14,29 +14,19 @@ def create_table():
             CREATE TABLE IF NOT EXISTS tasks (
                 task_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
-                
-                task_name TEXT,
+                task_name TEXT NOT NULL,
                 task_description TEXT,
-                status TEXT,
-                priority INTEGER DEFAULT 1,
+                status TEXT CONSTRAINT my_check check(status in ('To Do','In Progress', 'Done')) DEFAULT 'To Do',
                 created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 assigned_to TEXT ,
-                assignee TEXT,
+                importance REAL CHECK (importance >= 0 AND importance <= 1) DEFAULT 0.5,
+                urgency REAL CHECK (urgency >= 0 AND urgency <= 1) DEFAULT 0,
+                due_date DATETIME NULL,
                 FOREIGN KEY (user_id) REFERENCES users (user_id)
             );
         """)
         db.commit()
 
-
-# ------------------------------------
-# CREATE
-# ------------------------------------
-def task_name(task_name):
-    with sqlite3.connect(DB_NAME) as db:
-        cursor = db.cursor()
-        cursor.execute("INSERT INTO tasks (task_name) VALUES (?)", (task_name,))
-        db.commit()
-        return cursor.lastrowid
 
 
 # ------------------------------------
@@ -51,7 +41,7 @@ def get_all_tasks():
 def create_task(task_name):
     with sqlite3.connect(DB_NAME) as db:
         cursor = db.cursor()
-        cursor.execute("""" INSERT INTO tasks (task_name) VALUES (?)""", (task_name,))
+        cursor.execute(" INSERT INTO tasks (task_name) VALUES (?)", (task_name,))
         db.commit()
         return cursor.lastrowid
 # ------------------------------------
