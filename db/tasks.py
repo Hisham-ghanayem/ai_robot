@@ -30,13 +30,17 @@ def create_table():
 
 
 # ------------------------------------
-# READ (All Users)
+# READ (All tasks)
 # ------------------------------------
 def get_all_tasks():
     with sqlite3.connect(DB_NAME) as db:
         cursor = db.cursor()
         cursor.execute('SELECT * FROM tasks')
         return cursor.fetchall()
+
+# ------------------------------------
+# Create task by instering task name
+# ------------------------------------
 
 def create_task(task_name):
     with sqlite3.connect(DB_NAME) as db:
@@ -58,7 +62,7 @@ def get_task_by_id(task_id):
 
 
 # ------------------------------------
-# UPDATE
+# UPDATE task name based on task_id
 # ------------------------------------
 def update_task(task_id, new_task_name):
     with sqlite3.connect(DB_NAME) as db:
@@ -71,7 +75,7 @@ def update_task(task_id, new_task_name):
 
 
 # ------------------------------------
-# DELETE
+# DELETE task based on its id
 # ------------------------------------
 def delete_task(task_id):
     with sqlite3.connect(DB_NAME) as db:
