@@ -20,6 +20,17 @@ def create_table():
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS memory (
+            memory_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            memory_name TEXT NOT NULL,
+            memory_type TEXT,
+            memory_description TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );
+        """)
         db.commit()
 
 
