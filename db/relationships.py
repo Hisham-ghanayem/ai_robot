@@ -15,6 +15,7 @@ def create_table():
                 user_id INTEGER NOT NULL,
                 person_name TEXT NOT NULL,
                 relationship_type TEXT NOT NULL,
+                relationship_description TEXT NOT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
             );
@@ -25,13 +26,13 @@ def create_table():
 # ------------------------------------
 # CREATE
 # ------------------------------------
-def create_relationship(user_id, person_name, relationship_type):
+def create_relationship(user_id, person_name, relationship_type, relationship_description):
     with sqlite3.connect(DB_NAME) as db:
         cursor = db.cursor()
         cursor.execute("""
-            INSERT INTO relationships (user_id, person_name, relationship_type)
-            VALUES (?, ?, ?)
-        """, (user_id, person_name, relationship_type))
+            INSERT INTO relationships (user_id, person_name, relationship_type, relationship_description)
+            VALUES (?, ?, ?,?)
+        """, (user_id, person_name, relationship_type, relationship_description))
         db.commit()
         return cursor.lastrowid
 
