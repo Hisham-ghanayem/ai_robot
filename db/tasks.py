@@ -42,10 +42,10 @@ def get_all_tasks():
 # Create task by instering task name
 # ------------------------------------
 
-def create_task(task_name):
+def create_task(task_name,task_description):
     with sqlite3.connect(DB_NAME) as db:
         cursor = db.cursor()
-        cursor.execute(" INSERT INTO tasks (task_name) VALUES (?)", (task_name,))
+        cursor.execute(" INSERT INTO tasks (task_name, task_description) VALUES (?,?)", (task_name,task_description,))
         db.commit()
         return cursor.lastrowid
 # ------------------------------------
