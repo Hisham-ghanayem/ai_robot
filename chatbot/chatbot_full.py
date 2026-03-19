@@ -120,8 +120,9 @@ def run_chatbot():
         relationship_text =relationshipo_handle(prompt)
         if relationship_text:
             create_relationship(
-                user_id= "User Relationship",
-                relationship_name = "User Relationship",
+                user_id= "User Input",
+                person_name= "User Input",
+                relationship_type= "User Input",
                 relationship_description = relationship_text,
 
             )
