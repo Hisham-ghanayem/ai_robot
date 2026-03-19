@@ -1,5 +1,6 @@
 from ollama import chat
 from db.memories import create_memory
+from db.relationships import create_relationship
 from db.tasks import create_task
 
 # ---------------------------
@@ -71,6 +72,13 @@ def handle_task(user_input):
         cleaned = user_input.lower().replace(trigger, "").strip()
         return cleaned
     return None
+
+def relationshipo_handle(user_input):
+    trigger = "save this to relationship"
+    if trigger in user_input.lower():
+        cleaned = user_input.lower().replace(trigger, "").strip()
+        return cleaned
+    return None
 # ---------------------------
 # Main Chat Loop
 # ---------------------------
@@ -104,9 +112,22 @@ def run_chatbot():
             create_task(
                 task_name="User Task",
                 task_description=task_text,
-                status = "To Do"
+                #status = "To Do"
             )
+            print_response("Task saved successfully.")
+            continue
+        # check relationship intent first
+        relationship_text =relationshipo_handle(prompt)
+        if relationship_text:
+            create_relationship(
+                user_id= "User Input",
+                person_name= "User Input",
+                relationship_type= "User Input",
+                relationship_description = relationship_text,
 
+            )
+            print_response("Relationship saved successfully.")
+            continue
         # 2️⃣ Normal LLM Flow
         add_user_message(prompt)
 
