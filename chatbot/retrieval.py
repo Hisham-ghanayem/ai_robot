@@ -1,20 +1,22 @@
 import sqlite3
 import spacy
+import pytextrank
 
 # Load spaCy English model once when the file starts.
 # "sm" is enough for your current stage and lighter than "lg".
 nlp = spacy.load("en_core_web_lg")
-
+nlp.add_pipe("textrank")
 
 def extract_meaningful_words(user_input):
     """
     Take the user's sentence and return useful search words.
     We keep nouns, proper nouns, verbs, adjectives, and numbers.
     """
+
     doc = nlp(user_input)
 
     keywords = [
-        token.text.lower()
+        token.lemma_.lower()
         for token in doc
         if token.pos_ in ["NOUN", "PROPN", "VERB", "ADJ", "NUM"]
         and not token.is_stop
