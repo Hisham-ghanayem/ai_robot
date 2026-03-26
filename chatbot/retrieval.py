@@ -7,14 +7,11 @@ import pytextrank
 nlp = spacy.load("en_core_web_lg")
 nlp.add_pipe("textrank")
 
-def extract_meaningful_words(user_input):
+def extract_meaningful_words(doc):
     """
     Take the user's sentence and return useful search words.
     We keep nouns, proper nouns, verbs, adjectives, and numbers.
     """
-
-    doc = nlp(user_input)
-
     keywords = [
         token.lemma_.lower()
         for token in doc
@@ -24,9 +21,33 @@ def extract_meaningful_words(user_input):
     ]
 
     return keywords
+    """
+    Take the user's sentence and return useful phrases. Give every phrase rank and count
+    """
+def extract_meaningful_phrases(doc):
+    results = []
 
+    for phrase in doc._.phrases:
+        results.append({
+            "text": phrase.text,
+            "rank": phrase.rank,
+            "count": phrase.count,
+        })
+
+    return results
+    """
+    Thif function call both keywords and phrases function and return 2 lists of results
+    """
+def analyze_query(user_input):
+    doc = nlp(user_input)
+
+    return {
+        "phrases": extract_meaningful_phrases(doc),
+        "keywords": extract_meaningful_words(doc),
+    }
 
 def global_search(user_input):
+    doc = nlp(user_input)
     """
     Search all tables and all text-like columns in the SQLite database
     using extracted keywords from the user input.
@@ -34,9 +55,11 @@ def global_search(user_input):
     Returns:
         list[str]: matching text values from the database
     """
-    keywords = extract_meaningful_words(user_input)
+    keywords = extract_meaningful_words(doc)
+    phrases = extract_meaningful_phrases(doc)
+    output_results = [keywords, phrases]
 
-    if not keywords:
+    if not (output_results):
         return []
 
     conn = sqlite3.connect("database.db")
@@ -58,7 +81,7 @@ def global_search(user_input):
         columns = [col[1] for col in columns_info]
 
         for column in columns:
-            for word in keywords:
+            for word in output_results:
                 try:
                     query = f"SELECT {column} FROM {table} WHERE {column} LIKE ?"
                     cursor.execute(query, (f"%{word}%",))
