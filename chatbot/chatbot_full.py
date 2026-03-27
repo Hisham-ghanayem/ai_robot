@@ -8,7 +8,7 @@ from chatbot.retrieval import global_search, build_context
 # Configuration
 # ---------------------------
 
-model = "phi3:mini"
+model = "glm-4.7-flash:latest"
 
 base_system_prompt = """
 Your name is Amir, an AI assistant developed by Hisham.
