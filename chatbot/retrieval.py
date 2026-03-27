@@ -34,6 +34,7 @@ def extract_meaningful_phrases(doc):
             "count": phrase.count,
         })
 
+
     return results
     """
     Thif function call both keywords and phrases function and return 2 lists of results
@@ -57,7 +58,9 @@ def global_search(user_input):
     """
     keywords = extract_meaningful_words(doc)
     phrases = extract_meaningful_phrases(doc)
-    output_results = [keywords, phrases]
+    "Create new phrase_text that extract phrase text only from extract_meaningful_phrases function"
+    phrase_text = [item["text"] for item in phrases]
+    output_results = [keywords,  phrase_text]
 
     if not (output_results):
         return []
