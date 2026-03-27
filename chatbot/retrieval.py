@@ -1,6 +1,7 @@
 import sqlite3
 import spacy
 import pytextrank
+import itertools
 
 # Load spaCy English model once when the file starts.
 # "sm" is enough for your current stage and lighter than "lg".
@@ -60,7 +61,7 @@ def global_search(user_input):
     phrases = extract_meaningful_phrases(doc)
     "Create new phrase_text that extract phrase text only from extract_meaningful_phrases function"
     phrase_text = [item["text"] for item in phrases]
-    output_results = [keywords,  phrase_text]
+    output_results = keywords + phrase_text
 
     if not (output_results):
         return []
