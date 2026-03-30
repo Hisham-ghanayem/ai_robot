@@ -42,11 +42,38 @@ def analyze_query(user_input):
     Call both keywords and phrases functions and return both results.
     """
     doc = nlp(user_input)
-
-    return {
+    query_data = {
         "phrases": extract_meaningful_phrases(doc),
         "keywords": extract_meaningful_words(doc),
     }
+
+    return query_data
+
+""""
+This function is to clear keywords and phraes and make sure that there are no
+duplicate especially after lower all char in every list and making them lower
+case
+"""
+def prepare_search_terms(query_data):
+    keywords = query_data["keywords"]
+    phrases = query_data["phrases"]
+
+    text_phrases = []
+    for phrase in phrases:
+        phrase_text = phrase["text"].strip().lower()
+        if phrase_text:
+            text_phrases.append(phrase_text)
+
+    cleaned_keywords = []
+    for keyword in keywords:
+        clean_keyword = keyword.strip().lower()
+        if clean_keyword:
+            cleaned_keywords.append(clean_keyword)
+
+    combined_terms = cleaned_keywords + text_phrases
+    unique_terms = list(dict.fromkeys(combined_terms))
+
+    return unique_terms
 
 
 def global_search(user_input):
