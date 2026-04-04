@@ -1,13 +1,12 @@
 import sqlite3
-
-DB_NAME = "database.db"
+from config import DB_PATH
 
 
 # ------------------------------------
 # Create table (run once at startup)
 # ------------------------------------
 def create_table():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS memory (
@@ -38,7 +37,7 @@ def create_table():
 # CREATE
 # ------------------------------------
 def create_memory(memory_name, memory_description, memory_type=None, user_id=None):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
             INSERT INTO memory (memory_name, memory_description, memory_type, user_id)
@@ -52,7 +51,7 @@ def create_memory(memory_name, memory_description, memory_type=None, user_id=Non
 # READ (All)
 # ------------------------------------
 def get_all_memory():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("SELECT * FROM memory")
         return cursor.fetchall()
@@ -62,7 +61,7 @@ def get_all_memory():
 # READ (Single)
 # ------------------------------------
 def get_memory(memory_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "SELECT * FROM memory WHERE memory_id = ?",
@@ -75,7 +74,7 @@ def get_memory(memory_id):
 # UPDATE
 # ------------------------------------
 def update_memory(memory_id, new_memory_name):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "UPDATE memory SET memory_name = ? WHERE memory_id = ?",
@@ -88,7 +87,7 @@ def update_memory(memory_id, new_memory_name):
 # DELETE
 # ------------------------------------
 def delete_memory(memory_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "DELETE FROM memory WHERE memory_id = ?",

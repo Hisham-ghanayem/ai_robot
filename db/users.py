@@ -1,14 +1,12 @@
 import sqlite3
-
-
-DB_NAME = "database.db"
+from config import DB_PATH
 
 
 # ------------------------------------
 # Create table (run once at startup)
 # ------------------------------------
 def create_table():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -24,7 +22,7 @@ def create_table():
 # CREATE
 # ------------------------------------
 def create_user(display_name):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "INSERT INTO users (display_name) VALUES (?)",
@@ -38,7 +36,7 @@ def create_user(display_name):
 # READ (All Users)
 # ------------------------------------
 def get_all_users():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("SELECT * FROM users")
         return cursor.fetchall()
@@ -48,7 +46,7 @@ def get_all_users():
 # READ (Single User)
 # ------------------------------------
 def get_user_by_id(user_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "SELECT * FROM users WHERE user_id = ?",
@@ -61,7 +59,7 @@ def get_user_by_id(user_id):
 # UPDATE
 # ------------------------------------
 def update_user(user_id, new_display_name):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "UPDATE users SET display_name = ? WHERE user_id = ?",
@@ -74,7 +72,7 @@ def update_user(user_id, new_display_name):
 # DELETE
 # ------------------------------------
 def delete_user(user_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "DELETE FROM users WHERE user_id = ?",

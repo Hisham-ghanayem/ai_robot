@@ -1,13 +1,12 @@
 import sqlite3
-
-DB_NAME = "database.db"
+from config import DB_PATH
 
 
 # ------------------------------------
 # Create Table
 # ------------------------------------
 def create_table():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS relationships (
@@ -27,7 +26,7 @@ def create_table():
 # CREATE
 # ------------------------------------
 def create_relationship(user_id, person_name, relationship_type, relationship_description):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
             INSERT INTO relationships (user_id, person_name, relationship_type, relationship_description)
@@ -41,7 +40,7 @@ def create_relationship(user_id, person_name, relationship_type, relationship_de
 # READ ALL
 # ------------------------------------
 def get_all_relationships():
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("SELECT * FROM relationships")
         return cursor.fetchall()
@@ -51,7 +50,7 @@ def get_all_relationships():
 # READ SINGLE
 # ------------------------------------
 def get_relationship_by_id(relationship_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "SELECT * FROM relationships WHERE relationship_id = ?",
@@ -64,7 +63,7 @@ def get_relationship_by_id(relationship_id):
 # UPDATE
 # ------------------------------------
 def update_relationship(relationship_id, new_person_name, new_relationship_type):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute("""
             UPDATE relationships
@@ -78,7 +77,7 @@ def update_relationship(relationship_id, new_person_name, new_relationship_type)
 # DELETE
 # ------------------------------------
 def delete_relationship(relationship_id):
-    with sqlite3.connect(DB_NAME) as db:
+    with sqlite3.connect(DB_PATH) as db:
         cursor = db.cursor()
         cursor.execute(
             "DELETE FROM relationships WHERE relationship_id = ?",

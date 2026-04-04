@@ -1,7 +1,7 @@
 import re
 import sqlite3
 from config import DB_PATH
-user_input = "Who is my wife and what do i do for living and what are my hobbies"
+
 try:
     import spacy
 except ImportError:
@@ -190,7 +190,7 @@ def build_context(search_results):
 
     return context
 if __name__ == "__main__":
-    user_input = "I want to be a cook"
+    user_input = "what game do I enjoy playing the most and why"
 
     query_data = analyze_query(user_input)
     search_terms = prepare_search_terms(query_data)
