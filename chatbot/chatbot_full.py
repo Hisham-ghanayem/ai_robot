@@ -3,58 +3,80 @@ from db.memories import create_memory
 from db.relationships import create_relationship
 from db.tasks import create_task
 from chatbot.retrieval import global_search, build_context
+from chatbot.router import route_query
 
 # ---------------------------
 # Configuration
 # ---------------------------
 
-model = "glm-4.7-flash:latest"
+model = "gemma3:27b"
 
-base_system_prompt = """
-Your name is Amir, an AI assistant developed by Hisham.
-You are respectful, concise, and grounded in memory.
-Do not hallucinate.
+memory_system_prompt = """
+Your name is Amir. You are an AI assistant developed by Hisham.
 
-When answering questions about stored memory:
+You are helpful, calm, and grounded in stored memory.
+When answering personal questions, use the provided memory context as your main source of truth.
 
-- Use the provided memory context as your primary evidence
-- Give direct answers when the memory clearly contains the answer
-- If the user asks why, how you know, or what makes you think that, explain using the memory context
-- You may make simple evidence-based inferences, but only when they are directly supported by memory
-- Do not invent new facts, motives, feelings, or backstory
-- If the memory is not enough to support the answer, say you don't know
+Behavior:
+- Answer directly and clearly
+- Use the memory context as primary evidence
+- Do not invent personal facts, emotions, motives, or history
+- Do not pretend to know something that is not supported by memory
+- If the memory clearly answers the question, answer confidently
+- If the memory partially supports the answer, answer carefully and state uncertainty
+- If the memory does not contain enough information, say you do not know based on stored memory
 
-Rules:
-- Prefer clear and direct answers
-- Do not speculate beyond the memory
-- Do not claim certainty when the memory only supports a reasonable inference
-- Keep answers concise, but explain briefly when the user asks for reasoning
+Reasoning:
+- You may make small, evidence-based inferences only when directly supported by memory
+- If the user asks why or how you know, explain using the memory context
+- Do not speculate beyond the available memory
 
-Examples:
-
-Memory: "Samete is your wife."
-User: "Who is Samete?"
-Answer: "Samete is your wife."
-
-Memory: "You play Age of Empires 4 daily."
-User: "What game do I enjoy playing?"
-Answer: "You enjoy playing Age of Empires 4."
-
-Memory: "You play Age of Empires 4 daily."
-User: "Why do you think I enjoy playing AOE4?"
-Answer: "Because your memory says you play Age of Empires 4 daily, which strongly suggests that you enjoy it."
-
-Memory: ""
-User: "What are my hobbies?"
-Answer: "I don't know."
+Style:
+- Be natural, respectful, and concise
+- Do not repeat that you are an AI assistant unless asked
+- Do not give long disclaimers
+- Focus on being useful and grounded
 """
 
-history = [
-    {
-        "role": "system",
-        "content": base_system_prompt
-    }
-]
+hybrid_system_prompt = """
+Your name is Amir. You are an AI assistant developed by Hisham.
+
+You are helpful, calm, practical, and personalized.
+Use the provided memory context as personal background about Hisham.
+Then combine that with general reasoning to give useful recommendations.
+
+Behavior:
+- Use memory as personalization context, not as the only answer source
+- Base personal facts only on memory
+- You may reason beyond memory when giving advice, recommendations, comparisons, or next steps
+- Do not invent unsupported personal facts
+- If memory is limited, still give a best-effort recommendation and make that clear briefly
+
+Style:
+- Be natural, direct, and useful
+- Do not repeat that you are an AI assistant unless asked
+- Do not give long disclaimers
+- Avoid robotic phrases like "I don't have personal opinions"
+- Give practical reasoning
+"""
+
+general_system_prompt = """
+Your name is Amir. You are an AI assistant developed by Hisham.
+
+You are helpful, calm, practical, and concise.
+
+Behavior:
+- Answer general questions clearly and directly
+- Use normal reasoning and general knowledge
+- Do not force memory into the answer when it is not needed
+
+Style:
+- Be natural and useful
+- Do not repeat that you are an AI assistant unless asked
+- Do not give long disclaimers
+"""
+
+history = []
 
 # ---------------------------
 # Utility Functions
@@ -76,11 +98,6 @@ def add_assistant_message(reply):
         "role": "assistant",
         "content": reply
     })
-
-
-def call_model():
-    response = chat(model=model, messages=history)
-    return response.message.content
 
 
 def print_response(text):
@@ -122,6 +139,41 @@ def relationship_handle(user_input):
 
 
 # ---------------------------
+# Prompt Builder
+# ---------------------------
+
+def build_messages_for_route(prompt, route, memory_context=""):
+    if route == "memory_only":
+        system_prompt = memory_system_prompt
+    elif route == "hybrid":
+        system_prompt = hybrid_system_prompt
+    else:
+        system_prompt = general_system_prompt
+
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt
+        }
+    ]
+
+    if memory_context:
+        messages.append({
+            "role": "system",
+            "content": memory_context
+        })
+
+    messages.extend(history)
+
+    messages.append({
+        "role": "user",
+        "content": prompt
+    })
+
+    return messages
+
+
+# ---------------------------
 # Main Chat Loop
 # ---------------------------
 
@@ -129,12 +181,11 @@ def run_chatbot():
     while True:
         prompt = get_user_input()
 
-        # Exit condition
         if prompt.lower() in ["exit", "bye"]:
             print("bot: Goodbye.")
             break
 
-        # 1. Memory save
+        # 1. Explicit save rules
         memory_text = handle_memory(prompt)
         if memory_text:
             create_memory(
@@ -145,7 +196,6 @@ def run_chatbot():
             print_response("Memory saved successfully.")
             continue
 
-        # 2. Task save
         task_text = handle_task(prompt)
         if task_text:
             create_task(
@@ -155,7 +205,6 @@ def run_chatbot():
             print_response("Task saved successfully.")
             continue
 
-        # 3. Relationship save
         relationship_text = relationship_handle(prompt)
         if relationship_text:
             create_relationship(
@@ -167,43 +216,33 @@ def run_chatbot():
             print_response("Relationship saved successfully.")
             continue
 
-        # 4. Retrieval step
-        search_results = global_search(prompt)
-        memory_context = build_context(search_results)
+        # 2. Route decision
+        route = route_query(prompt)
+        print(f"[route: {route}]")  # helpful while debugging
 
-        # 5. Build temporary message list for this turn
-        messages_for_model = [
-            {
-                "role": "system",
-                "content": base_system_prompt
-            }
-        ]
+        # 3. Retrieval only when needed
+        memory_context = ""
+        if route in ["memory_only", "hybrid"]:
+            search_results = global_search(prompt)
+            memory_context = build_context(search_results)
 
-        # Add memory context only if something useful was found
-        if memory_context:
-            messages_for_model.append({
-                "role": "system",
-                "content": memory_context
-            })
+        # 4. Build route-specific messages
+        messages_for_model = build_messages_for_route(
+            prompt=prompt,
+            route=route,
+            memory_context=memory_context
+        )
 
-        # Add previous conversation history except the first system prompt
-        messages_for_model.extend(history[1:])
-
-        # Add current user prompt
-        messages_for_model.append({
-            "role": "user",
-            "content": prompt
-        })
-
-        # Save user message into history
+        # 5. Save user message
         add_user_message(prompt)
 
-        # Call model using the temporary messages_for_model
+        # 6. Call model
         response = chat(model=model, messages=messages_for_model)
         assistant_reply = response.message.content
 
         print_response(assistant_reply)
 
+        # 7. Save assistant message
         add_assistant_message(assistant_reply)
 
 

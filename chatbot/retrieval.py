@@ -1,7 +1,7 @@
 import re
 import sqlite3
 from config import DB_PATH
-user_input = "Who is my wife and what do i do for living and what are my hobbies"
+#user_input = "Who is my wife and what do i do for living and what are my hobbies"
 try:
     import spacy
 except ImportError:
