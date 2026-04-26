@@ -25,17 +25,24 @@ def route_query(user_input):
         "what should i focus on",
         "what should i learn next",
         "what should i work on next",
+        "based on what you know about me",
+        "what do you think my",
+        "do i need to do"
+
     ]
 
     memory_clues = [
         "who is my",
         "what is my",
         "when is my",
-        "what do you know about",
+        "what do you know about my",
         "what did i tell you",
         "what was the",
         "tell me about my",
         "when did i",
+        "where do i live",
+        "what do i do",
+        "what sport do i do"
     ]
 
     # Hybrid must win first, because some hybrid questions also contain memory wording
@@ -46,3 +53,5 @@ def route_query(user_input):
         return "memory_only"
 
     return "general_only"
+
+

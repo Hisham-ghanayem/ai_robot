@@ -1,213 +1,50 @@
-import re
-import sqlite3
-from config import DB_PATH
+def route_query(user_input):
+    text = user_input.strip().lower()
 
-try:
-    import spacy
-except ImportError:
-    spacy = None
-
-try:
-    import pytextrank  # noqa: F401
-except ImportError:
-    pytextrank = None
-
-
-MODEL_CANDIDATES = ("en_core_web_lg", "en_core_web_sm")
-_nlp = None
-
-
-def _get_nlp():
-    global _nlp
-
-    if _nlp is not None:
-        return _nlp
-
-    if spacy is None:
-        return None
-
-    for model_name in MODEL_CANDIDATES:
-        try:
-            _nlp = spacy.load(model_name)
-            break
-        except OSError:
-            continue
-
-    if _nlp is None:
-        _nlp = spacy.blank("en")
-
-    if pytextrank is not None and "textrank" not in _nlp.pipe_names:
-        try:
-            _nlp.add_pipe("textrank")
-        except Exception:
-            pass
-
-    return _nlp
-
-
-def _fallback_keywords(user_input):
-    return re.findall(r"[A-Za-z0-9]+", user_input.lower())
-
-
-
-def _quote_identifier(identifier):
-    return '"' + identifier.replace('"', '""') + '"'
-
-
-def extract_meaningful_words(doc):
-    keywords = [
-        token.lemma_.lower()
-        for token in doc
-        if token.pos_ in ["NOUN", "PROPN", "VERB", "ADJ", "NUM"]
-        and not token.is_stop
-        and not token.is_punct
+    hybrid_clues = [
+        "should i",
+        "what should i",
+        "what should be my",
+        "for me",
+        "recommend",
+        "best for me",
+        "fits me",
+        "career path",
+        "based on",
+        "help me choose",
+        "help me decide",
+        "which should i",
+        "which is better for me",
+        "what should i buy",
+        "what should i focus on",
+        "what should i learn next",
+        "what should i work on next",
     ]
-    return keywords
+
+    memory_clues = [
+        "who is my",
+        "what is my",
+        "when is my",
+        "what do you know about my",
+        "what did i tell you",
+        "what was the",
+        "tell me about my",
+        "when did i",
+        "where do i live",
+    ]
+
+    print("TEXT:", repr(text))
+    print("MEMORY CLUES:", memory_clues)
+    print("MEMORY MATCHES:", [clue for clue in memory_clues if clue in text])
+
+    if any(clue in text for clue in hybrid_clues):
+        return "hybrid"
+
+    if any(clue in text for clue in memory_clues):
+        return "memory_only"
+
+    return "general_only"
 
 
-def extract_meaningful_phrases(doc):
-    results = []
-
-    if not hasattr(doc._, "phrases"):
-        return results
-
-    for phrase in doc._.phrases:
-        results.append({
-            "text": phrase.text,
-            "rank": phrase.rank,
-            "count": phrase.count,
-        })
-
-    return results
-
-
-def analyze_query(user_input):
-    user_input = user_input.strip()
-    if not user_input:
-        return {"phrases": [], "keywords": []}
-
-    nlp = _get_nlp()
-    if nlp is None:
-        return {"phrases": [], "keywords": _fallback_keywords(user_input)}
-
-    doc = nlp(user_input)
-    keywords = extract_meaningful_words(doc)
-    phrases = extract_meaningful_phrases(doc)
-
-    if not keywords:
-        keywords = _fallback_keywords(user_input)
-
-    return {
-        "phrases": phrases,
-        "keywords": keywords,
-    }
-
-
-def prepare_search_terms(query_data):
-    keywords = query_data["keywords"]
-    phrases = query_data["phrases"]
-
-    text_phrases = []
-    for phrase in phrases:
-        phrase_text = phrase["text"].strip().lower()
-        if phrase_text and len(phrase["text"]) > 2:
-            text_phrases.append(phrase_text)
-
-    cleaned_keywords = []
-    for keyword in keywords:
-        clean_keyword = str(keyword).strip().lower()
-        if clean_keyword and len(keyword) > 2:
-            cleaned_keywords.append(clean_keyword)
-
-    combined_terms = cleaned_keywords + text_phrases
-    return list(dict.fromkeys(combined_terms))
-
-
-def _normalize_search_terms(user_input_or_terms):
-    if isinstance(user_input_or_terms, str):
-        return prepare_search_terms(analyze_query(user_input_or_terms))
-
-    combined_terms = []
-    for term in user_input_or_terms:
-        clean_term = str(term).strip().lower()
-        if clean_term:
-            combined_terms.append(clean_term)
-
-    return list(dict.fromkeys(combined_terms))
-
-
-def global_search(user_input_or_terms):
-    search_terms = _normalize_search_terms(user_input_or_terms)
-    if not search_terms:
-        return []
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [row[0] for row in cursor.fetchall()]
-
-    all_results = []
-
-    for table in tables:
-        quoted_table = _quote_identifier(table)
-        cursor.execute(f"PRAGMA table_info({quoted_table});")
-        columns = [col[1] for col in cursor.fetchall()]
-
-        for column in columns:
-            quoted_column = _quote_identifier(column)
-            for term in search_terms:
-                query = (
-                    f"SELECT {quoted_column} FROM {quoted_table} "
-                    f"WHERE CAST({quoted_column} AS TEXT) LIKE ?"
-                )
-
-                try:
-                    cursor.execute(query, (f"%{term}%",))
-                except sqlite3.OperationalError:
-                    continue
-
-                matches = cursor.fetchall()
-                for match in matches:
-                    value = match[0]
-                    if value is None:
-                        continue
-
-                    clean_value = str(value).strip()
-                    if clean_value:
-                        all_results.append(clean_value)
-
-    conn.close()
-    return list(dict.fromkeys(all_results))
-
-
-def build_context(search_results):
-    if not search_results:
-        return ""
-
-    context = "Known information from memory:\n"
-    for item in search_results:
-        context += f"- {item}\n"
-
-    return context
 if __name__ == "__main__":
-    user_input = "what game do I enjoy playing the most and why"
-
-    query_data = analyze_query(user_input)
-    search_terms = prepare_search_terms(query_data)
-    search_results = global_search(search_terms)
-    context = build_context(search_results)
-
-    print("USER INPUT:")
-    print(user_input)
-
-    print("\nQUERY DATA:")
-    print(query_data)
-
-    print("\nSEARCH TERMS:")
-    print(search_terms)
-
-    print("\nSEARCH RESULTS:")
-    print(search_results)
-
-    print("\nCONTEXT:")
-    print(context)
+    print("FINAL ROUTE:", route_query("where do i live"))

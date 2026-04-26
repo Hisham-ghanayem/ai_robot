@@ -1,7 +1,7 @@
 import re
 import sqlite3
 from config import DB_PATH
-#user_input = "Who is my wife and what do i do for living and what are my hobbies"
+user_input = "what is my full time job and where do I work"
 try:
     import spacy
 except ImportError:
@@ -137,6 +137,7 @@ def _normalize_search_terms(user_input_or_terms):
 
 
 def global_search(user_input_or_terms):
+    print(">>> ENTERED global_search")
     search_terms = _normalize_search_terms(user_input_or_terms)
     if not search_terms:
         return []
@@ -146,13 +147,23 @@ def global_search(user_input_or_terms):
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = [row[0] for row in cursor.fetchall()]
 
+
+
     all_results = []
 
     for table in tables:
+        print("Current Tables:", table)
+
+        if table == "sqlite_sequence":
+            print("skipped internal table", table)
+            continue
+
         quoted_table = _quote_identifier(table)
         cursor.execute(f"PRAGMA table_info({quoted_table});")
         columns = [col[1] for col in cursor.fetchall()]
 
+        print("all columns", columns)
+        print("Looped tables:", table)
         for column in columns:
             quoted_column = _quote_identifier(column)
             for term in search_terms:
@@ -171,13 +182,24 @@ def global_search(user_input_or_terms):
                     value = match[0]
                     if value is None:
                         continue
+                    print(">>> ENTERED matches #############")
+                    print("used table for this match is:",table)
+                    print("used column for this match is:", column)
+                    print("matches is:", value)
 
                     clean_value = str(value).strip()
                     if clean_value:
-                        all_results.append(clean_value)
+                        result ={
+                            "table": table,
+                            "column": column,
+                            "matched_term": term,
+                            "value": clean_value,
+                        }
+                        all_results.append(result)
 
     conn.close()
-    return list(dict.fromkeys(all_results))
+    return all_results
+
 
 
 def build_context(search_results):
@@ -190,12 +212,13 @@ def build_context(search_results):
 
     return context
 if __name__ == "__main__":
-    user_input = "I want to be a cook"
+    user_input = "when did I start working for Lufthansa?"
 
     query_data = analyze_query(user_input)
     search_terms = prepare_search_terms(query_data)
     search_results = global_search(search_terms)
     context = build_context(search_results)
+
 
     print("USER INPUT:")
     print(user_input)
@@ -211,3 +234,8 @@ if __name__ == "__main__":
 
     print("\nCONTEXT:")
     print(context)
+    print("\nSTRUCTURED RESULTS:")
+    for r in search_results:
+        print(r)
+
+
