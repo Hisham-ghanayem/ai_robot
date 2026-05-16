@@ -1,6 +1,7 @@
 import re
 import sqlite3
 from config import DB_PATH
+from operator import itemgetter
 
 try:
     import spacy
@@ -131,6 +132,7 @@ def build_term_importance(query_data):
 
         if text:
             term_importance[text] = rank * 10
+    print('Rank is here:', rank, text)
 
     # Fallback keywords
     for keyword in query_data["keywords"]:
@@ -228,21 +230,26 @@ def global_search(user_input):
     return all_results
 
 
-def build_context(search_results):
-    if not search_results:
+def build_context(top_3_results):
+    if not top_3_results:
         return ""
 
     context = "Known information from memory:\n"
-    for item in search_results:
+    for item in top_3_results:
         context += f"- {item['value']}\n"
 
     return context
 
+def sort_results(search_results):
+    sorted_results = sorted(search_results, key=lambda k: k["score"], reverse=True)
+    return sorted_results
 
 if __name__ == "__main__":
     user_input = "when did I start working for Lufthansa?"
 
     search_results = global_search(user_input)
+    sorted_results = sort_results(search_results)
+    top_3_results = sorted_results[:3]
     context = build_context(search_results)
 
     print("\nSEARCH RESULTS:")
@@ -251,3 +258,6 @@ if __name__ == "__main__":
 
     print("\nCONTEXT:")
     print(context)
+    print(sorted_results)
+    print("\nTOP 3 RESULTS:")
+    print(top_3_results)
