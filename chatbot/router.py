@@ -42,7 +42,13 @@ def route_query(user_input):
         "when did i",
         "where do i live",
         "what do i do",
-        "what sport do i do"
+        "what sport do i do",
+        "who are my brothers",
+        "what is my laptop",
+        "brother",
+        "parents",
+        "my gaming laptop",
+
     ]
 
     # Hybrid must win first, because some hybrid questions also contain memory wording
